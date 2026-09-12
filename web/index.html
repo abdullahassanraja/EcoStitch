@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>EcoStitch — Sustainable Garment Transformation</title>
+
+  <!-- Google Fonts: Plus Jakarta Sans & Outfit (Exact modern typography from reference) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ====================================================================== -->
+  <!-- FLASH / SPLASH SCREEN WITH GREEN ECOSTITCH LOGO                        -->
+  <!-- ====================================================================== -->
+  <div class="flash-screen-overlay" id="flash-screen" role="dialog" aria-modal="true" aria-label="EcoStitch Splash Screen">
+    <div class="flash-bg-glow"></div>
+    <div class="flash-content">
+      <div class="flash-logo-box">
+        <img src="assets/ecostitch_logo_neon.png" alt="Ec*Stitch" class="flash-logo-img">
+      </div>
+      <p class="flash-subtitle">Sustainable Garment Transformation</p>
+      <div class="flash-loader-track">
+        <div class="flash-loader-bar"></div>
+      </div>
+      <button class="flash-skip-hint" id="flash-skip-btn">Tap anywhere to skip &rarr;</button>
+    </div>
+  </div>
+
+  <!-- Ambient Presentation Stage -->
+  <main class="desktop-stage">
+
+    <!-- Top Desktop Control Bar -->
+    <header class="desktop-header-controls">
+      <div class="stage-brand">
+        <span class="live-dot"></span>
+        <img src="assets/ecostitch_logo_dark.png" alt="EcoStitch" class="stage-logo-preview">
+        <span class="stage-badge">App Live</span>
+      </div>
+
+      <div class="stage-actions">
+        <button class="stage-btn" id="btn-replay-splash" title="Replay Flash Screen">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l6.73-6.19"></path>
+          </svg>
+          <span>Replay Splash</span>
+        </button>
+        <button class="stage-btn" id="ctrl-toggle-screen" title="Toggle Home / Capture">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="16 3 21 3 21 8"></polyline>
+            <line x1="4" y1="20" x2="21" y2="3"></line>
+            <polyline points="21 16 21 21 16 21"></polyline>
+            <line x1="15" y1="15" x2="21" y2="21"></line>
+          </svg>
+          <span>Toggle Screen</span>
+        </button>
+        <button class="stage-btn" id="ctrl-sample-demo" title="Load Sample Garment">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <polyline points="21 15 16 10 5 21"></polyline>
+          </svg>
+          <span>Sample Garment</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Mobile Device Frame Container (Never Stretches or Overlaps) -->
+    <div class="phone-frame" id="app-phone-frame">
+      <!-- Dynamic Island / Speaker Notch -->
+      <div class="phone-notch">
+        <div class="notch-lens"></div>
+      </div>
+
+      <!-- Device Status Bar -->
+      <div class="status-bar">
+        <span class="status-time" id="status-clock">9:41</span>
+        <div class="status-icons">
+          <svg width="16" height="12" viewBox="0 0 17 12" fill="currentColor">
+            <path d="M1 9.5C1 8.67 1.67 8 2.5 8H3.5C4.33 8 5 8.67 5 9.5V11C5 11.55 4.55 12 4 12H2C1.45 12 1 11.55 1 11V9.5ZM5 6.5C5 5.67 5.67 5 6.5 5H7.5C8.33 5 9 5.67 9 6.5V11C9 11.55 8.55 12 8 12H6C5.45 12 5 11.55 5 11V6.5ZM9 3.5C9 2.67 9.67 2 10.5 2H11.5C12.33 2 13 2.67 13 3.5V11C13 11.55 12.55 12 12 12H10C9.45 12 9 11.55 9 11V3.5ZM13 0.5C13 -0.33 13.67 -1 14.5 -1H15.5C16.33 -1 17 -0.33 17 0.5V11C17 11.55 16.55 12 16 12H14C13.45 12 13 11.55 13 11V0.5Z" />
+          </svg>
+          <svg width="15" height="12" viewBox="0 0 16 12" fill="currentColor">
+            <path d="M8 3.5C10.5 3.5 12.8 4.5 14.4 6.1L15.8 4.7C13.8 2.7 11 1.5 8 1.5C5 1.5 2.2 2.7 0.2 4.7L1.6 6.1C3.2 4.5 5.5 3.5 8 3.5ZM8 7.5C9.4 7.5 10.6 8 11.6 9L13 7.6C11.6 6.3 9.9 5.5 8 5.5C6.1 5.5 4.4 6.3 3 7.6L4.4 9C5.4 8 6.6 7.5 8 7.5ZM8 10C7.2 10 6.5 10.7 6.5 11.5C6.5 12.3 7.2 13 8 13C8.8 13 9.5 12.3 9.5 11.5C9.5 10.7 8.8 10 8 10Z" />
+          </svg>
+          <div class="battery-icon">
+            <div class="battery-level"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- App Viewport Container -->
+      <div class="app-viewport">
+
+        <!-- ============================================================== -->
+        <!-- SCREEN 1: ECOSTITCH HOME DASHBOARD                             -->
+        <!-- ============================================================== -->
+        <div class="screen active-screen" id="home-screen">
+          <div class="screen-content scrollable">
+            <!-- Top Header Row -->
+            <header class="top-header">
+              <div class="greeting-box">
+                <span class="greeting-sub">Good afternoon</span>
+                <h2 class="greeting-main">Welcome back</h2>
+              </div>
+              <!-- Brand Badge with Custom Ec*Stitch Logo -->
+              <div class="brand-badge-container">
+                <img src="assets/ecostitch_logo_dark.png" alt="Ec*Stitch" class="dashboard-brand-logo">
+              </div>
+            </header>
+
+            <!-- Hero Electric Impact Card (Matching Reference Colors & Styling) -->
+            <div class="hero-impact-card" id="hero-impact-card">
+              <div class="impact-card-top-row">
+                <span class="impact-label">Fabric rescued so far</span>
+                <div class="impact-pill-badge">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8">
+                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                    <polyline points="17 6 23 6 23 12"></polyline>
+                  </svg>
+                  <span>+18% this mo</span>
+                </div>
+              </div>
+
+              <!-- Main Hero Stat -->
+              <div class="hero-stat-row">
+                <span class="hero-stat-number">3.2 kg</span>
+                <!-- Concentric Mini Energy Icon -->
+                <div class="hero-electric-mini-badge">
+                  <div class="mini-ring">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <p class="hero-stat-subtitle">Equivalent to 4 pairs of denim jeans diverted from landfill.</p>
+
+              <!-- Subtle stitch cutting line along the bottom -->
+              <div class="impact-bottom-stitch"></div>
+            </div>
+
+            <!-- Stat Strip (3 Stats separated by vertical dashed lines) -->
+            <div class="stat-strip">
+              <div class="stat-item">
+                <span class="stat-num">12</span>
+                <span class="stat-caption">Projects made</span>
+              </div>
+              <div class="vertical-divider-line"></div>
+              <div class="stat-item">
+                <span class="stat-num">8,400 L</span>
+                <span class="stat-caption">Water saved</span>
+              </div>
+              <div class="vertical-divider-line"></div>
+              <div class="stat-item">
+                <span class="stat-num">6</span>
+                <span class="stat-caption">Garment types</span>
+              </div>
+            </div>
+
+            <!-- Primary CTA Button (Full width, sleek black pill button with arrow) -->
+            <button class="primary-cta-button" id="btn-start-transformation" aria-label="Start a transformation">
+              <span>Start a transformation</span>
+              <div class="cta-arrow-circle">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </div>
+            </button>
+
+            <!-- Recent Projects Section -->
+            <section class="recent-projects-section">
+              <div class="section-title-row">
+                <h3 class="section-heading">Recent projects</h3>
+                <button class="text-link-btn" type="button">View all</button>
+              </div>
+
+              <!-- Horizontal scrolling project cards -->
+              <div class="projects-carousel" tabindex="0" role="region" aria-label="Recent Projects Carousel">
+                <!-- Card 1 (Active Electric Accent) -->
+                <div class="project-card highlight-card">
+                  <div class="project-card-top">
+                    <div class="project-icon-badge denim-badge">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <path d="M16 10a4 4 0 0 1-8 0"></path>
+                      </svg>
+                    </div>
+                    <span class="status-tag active-lime-tag">Complete</span>
+                  </div>
+                  <div class="project-card-body">
+                    <span class="project-title">Denim &rarr; Tote</span>
+                    <span class="project-material">Heavyweight twill</span>
+                  </div>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="project-card">
+                  <div class="project-card-top">
+                    <div class="project-icon-badge linen-badge">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"></path>
+                      </svg>
+                    </div>
+                    <span class="status-tag in-progress-tag">In progress</span>
+                  </div>
+                  <div class="project-card-body">
+                    <span class="project-title">Linen Shirt &rarr; Apron</span>
+                    <span class="project-material">Breathable weave</span>
+                  </div>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="project-card">
+                  <div class="project-card-top">
+                    <div class="project-icon-badge wool-badge">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
+                        <path d="M2 12h20"></path>
+                      </svg>
+                    </div>
+                    <span class="status-tag">Draft</span>
+                  </div>
+                  <div class="project-card-body">
+                    <span class="project-title">Wool Scarf &rarr; Mittens</span>
+                    <span class="project-material">Recycled knit</span>
+                  </div>
+                </div>
+
+                <!-- Card 4 -->
+                <div class="project-card">
+                  <div class="project-card-top">
+                    <div class="project-icon-badge canvas-badge">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                      </svg>
+                    </div>
+                    <span class="status-tag">Saved</span>
+                  </div>
+                  <div class="project-card-body">
+                    <span class="project-title">Canvas Pant &rarr; Pouch</span>
+                    <span class="project-material">Reinforced seams</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <!-- Bottom Navigation Bar: Home / Projects / Gallery / Profile -->
+          <nav class="bottom-nav-bar" aria-label="Bottom Navigation">
+            <button class="nav-item active" data-tab="home">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+              </svg>
+              <span>Home</span>
+            </button>
+            <button class="nav-item" data-tab="projects">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <circle cx="6" cy="6" r="3"></circle>
+                <path d="M8.12 8.12 12 12"></path>
+                <path d="M20 4 8.12 15.88"></path>
+                <circle cx="6" cy="18" r="3"></circle>
+                <path d="M14.8 14.8 20 20"></path>
+              </svg>
+              <span>Projects</span>
+            </button>
+            <button class="nav-item" data-tab="gallery">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+              </svg>
+              <span>Gallery</span>
+            </button>
+            <button class="nav-item" data-tab="profile">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              <span>Profile</span>
+            </button>
+          </nav>
+        </div>
+
+
+        <!-- ============================================================== -->
+        <!-- SCREEN 2: CAPTURE SCREEN                                       -->
+        <!-- ============================================================== -->
+        <div class="screen" id="capture-screen">
+          <!-- Screen Header -->
+          <header class="capture-header">
+            <button class="circular-back-btn" id="btn-back-to-home" aria-label="Return to Home">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
+            <h1 class="capture-title">New transformation</h1>
+          </header>
+
+          <div class="screen-content scrollable">
+            <!-- Viewfinder Area with Fixed Aspect Ratio -->
+            <div class="viewfinder-container" id="viewfinder">
+              <!-- Live Video Stream -->
+              <video id="camera-video-stream" autoplay playsinline muted></video>
+
+              <!-- Captured Image Preview -->
+              <img id="captured-preview-img" alt="Captured Garment Preview" />
+
+              <!-- Subtle diagonal striped placeholder background -->
+              <div class="diagonal-stripe-bg" id="diagonal-bg"></div>
+
+              <!-- Viewfinder 4 Corner Brackets -->
+              <div class="viewfinder-corners">
+                <span class="corner corner-tl"></span>
+                <span class="corner corner-tr"></span>
+                <span class="corner corner-bl"></span>
+                <span class="corner corner-br"></span>
+              </div>
+
+              <!-- Centered "Place coin" guide & instruction -->
+              <div class="coin-guide-container" id="coin-guide">
+                <div class="coin-dashed-circle">
+                  <div class="coin-inner-disc">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                      <circle cx="12" cy="12" r="9"></circle>
+                      <path d="M14.8 9A2 2 0 0 0 13 8h-2a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4h-2a2 2 0 0 1-1.8-1"></path>
+                      <path d="M12 6v2m0 8v2"></path>
+                    </svg>
+                    <span>Place coin</span>
+                  </div>
+                </div>
+
+                <div class="coin-caption-bubble">
+                  Place a coin next to your garment so we can measure it accurately
+                </div>
+              </div>
+
+              <!-- Retake Button -->
+              <button class="retake-floating-btn" id="btn-retake" style="display: none;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                  <path d="M3 3v5h5"></path>
+                </svg>
+                <span>Retake</span>
+              </button>
+            </div>
+
+            <!-- Dynamic Upload States: Ready -> Progress -> Success / Error -->
+            <div class="upload-state-card" id="upload-state-card" style="display: none;">
+              <!-- 1. Ready State: User must click "Continue" to trigger upload! -->
+              <div class="state-view state-ready" id="state-ready" style="display: none;">
+                <div class="upload-header-row">
+                  <div class="ready-file-badge">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                      <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                      <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                      <polyline points="21 15 16 10 5 21"></polyline>
+                    </svg>
+                  </div>
+                  <div class="upload-text-meta">
+                    <span class="upload-title">Garment captured & ready</span>
+                    <span class="upload-sub" id="ready-filename">IMG_3892.JPG &bull; 2.4 MB</span>
+                  </div>
+                </div>
+                <button class="continue-pill-btn" id="btn-trigger-upload">
+                  <span>Continue</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </button>
+              </div>
+
+              <!-- 2. Uploading State -->
+              <div class="state-view state-uploading" id="state-uploading" style="display: none;">
+                <div class="upload-header-row">
+                  <div class="spinner-circle"></div>
+                  <div class="upload-text-meta">
+                    <span class="upload-title">Uploading garment photo...</span>
+                    <span class="upload-sub" id="upload-filename">Uploading to Supabase Storage...</span>
+                  </div>
+                </div>
+                <div class="upload-progress-track">
+                  <div class="upload-progress-fill"></div>
+                </div>
+              </div>
+
+              <!-- 3. Success State -->
+              <div class="state-view state-success" id="state-success" style="display: none;">
+                <div class="upload-header-row">
+                  <div class="success-check-badge">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  </div>
+                  <div class="upload-text-meta">
+                    <span class="upload-title">Photo uploaded — getting ready to analyze your garment</span>
+                    <span class="upload-sub" id="success-garment-meta">Stored in Supabase database & storage</span>
+                  </div>
+                </div>
+                <div class="record-id-pill" id="success-garment-id-badge">Garment ID: ...</div>
+              </div>
+
+              <!-- 4. Failure State -->
+              <div class="state-view state-failure" id="state-failure" style="display: none;">
+                <div class="upload-header-row">
+                  <div class="error-warn-badge">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="12" y1="8" x2="12" y2="12"></line>
+                      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                  </div>
+                  <div class="upload-text-meta">
+                    <span class="upload-title error-voice">Upload didn't go through. Check your connection and try again.</span>
+                    <span class="upload-sub" id="failure-reason-text">Network or storage timeout</span>
+                  </div>
+                </div>
+                <button class="retry-action-btn" id="btn-retry-upload">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                    <path d="M3 3v5h5"></path>
+                  </svg>
+                  <span>Retry</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Preprocessed AI Result Container (Exact Same Size as the First Upload Screen) -->
+            <div class="preprocessed-result-card" id="preprocessed-result-view" style="display: none;">
+              <!-- 3/4 Aspect Ratio Canvas Matching the Viewfinder on the First Screen -->
+              <div class="cutout-preview-canvas full-viewfinder-size" id="cutout-canvas-container">
+                <img id="cutout-display-img" src="" alt="Background-removed Garment Cutout" />
+                <div class="cutout-glow-ring"></div>
+
+                <!-- 4 Viewfinder Corner Brackets Matching First Screen -->
+                <div class="viewfinder-corners">
+                  <span class="corner corner-tl"></span>
+                  <span class="corner corner-tr"></span>
+                  <span class="corner corner-bl"></span>
+                  <span class="corner corner-br"></span>
+                </div>
+
+                <!-- Floating Top Controls Inside Canvas -->
+                <div class="canvas-top-controls">
+                  <div class="canvas-status-pill">
+                    <span class="pulse-lime-dot"></span>
+                    <span>AI Cutout</span>
+                  </div>
+                  <div class="view-toggle-pill">
+                    <button class="view-toggle-btn active" id="btn-show-cutout" type="button">Cutout</button>
+                    <button class="view-toggle-btn" id="btn-show-original" type="button">Original</button>
+                  </div>
+                </div>
+                
+                <!-- Floating Reference Coin Detection Badge at Bottom -->
+                <div class="coin-detected-pill canvas-bottom-coin" id="coin-detected-badge">
+                  <span class="coin-symbol">🪙</span>
+                  <span id="coin-detected-text">Coin: <strong id="coin-detected-val">138.4 px</strong></span>
+                </div>
+              </div>
+
+              <!-- Sleek 1-Row Stats Strip -->
+              <div class="result-meta-strip">
+                <div class="strip-item">
+                  <span class="strip-label">Garment ID</span>
+                  <span class="strip-val mono" id="result-garment-id-text">#gmt_...</span>
+                </div>
+                <div class="strip-divider"></div>
+                <div class="strip-item">
+                  <span class="strip-label">Asset Format</span>
+                  <span class="strip-val highlight-green">PNG Alpha</span>
+                </div>
+                <div class="strip-divider"></div>
+                <div class="strip-item">
+                  <span class="strip-label">Scale Calibration</span>
+                  <span class="strip-val" id="result-scale-status">Calibrated</span>
+                </div>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="result-actions-compact">
+                <button class="primary-cta-button" id="btn-next-step" type="button">
+                  <span>Explore Transformations</span>
+                  <div class="cta-arrow-circle">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                      <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                  </div>
+                </button>
+                <button class="secondary-pill-btn" id="btn-result-retake" type="button">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                    <path d="M3 3v5h5"></path>
+                  </svg>
+                  <span>Retake / New Photo</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Tip Banner (Hidden during result view) -->
+            <div class="tip-banner" id="capture-tip-banner">
+              <div class="tip-icon-box">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+              </div>
+              <p class="tip-body">
+                <strong>Tip:</strong> lay the garment flat, good lighting, and keep the whole piece in frame.
+              </p>
+            </div>
+          </div>
+
+          <!-- Bottom Action Buttons: Take photo & Upload -->
+          <div class="capture-actions-bar" id="capture-actions-bar">
+            <!-- Take photo (filled black pill button) -->
+            <button class="btn-take-photo" id="btn-take-photo" aria-label="Take photo with camera">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                <circle cx="12" cy="13" r="4"></circle>
+              </svg>
+              <span>Take photo</span>
+            </button>
+
+            <!-- Upload (outlined pill button) -->
+            <button class="btn-upload-photo" id="btn-upload-photo" aria-label="Upload photo from device library">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+              </svg>
+              <span>Upload</span>
+            </button>
+
+            <input type="file" id="file-picker-input" accept="image/*" style="display: none;">
+          </div>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- AI PREPROCESSING LOADING OVERLAY                               -->
+        <!-- ============================================================== -->
+        <div class="ai-loading-overlay" id="ai-loading-modal" role="dialog" aria-modal="true" aria-label="EcoStitch AI Processing Engine" style="display: none;">
+          <div class="ai-ambient-glow"></div>
+
+          <div class="ai-loading-card">
+            <!-- Top AI Engine Badge -->
+            <div class="ai-engine-chip">
+              <span class="ai-pulse-orb"></span>
+              <span class="ai-engine-text">EcoStitch AI Vision Engine</span>
+              <span class="ai-engine-version">v3.4</span>
+            </div>
+
+            <!-- Central Holographic Radar / Scanner Viewport -->
+            <div class="ai-scanner-stage">
+              <!-- Counter-rotating radar rings -->
+              <div class="ai-radar-ring outer-ring"></div>
+              <div class="ai-radar-ring inner-ring"></div>
+              <div class="ai-radar-crosshair"></div>
+
+              <!-- Garment Thumbnail & Laser Beam -->
+              <div class="ai-garment-scan-frame">
+                <img id="ai-scan-thumb" src="" alt="Scanning Garment" />
+                <div class="ai-laser-beam"></div>
+                <div class="ai-reticle corner-tl"></div>
+                <div class="ai-reticle corner-tr"></div>
+                <div class="ai-reticle corner-bl"></div>
+                <div class="ai-reticle corner-br"></div>
+              </div>
+            </div>
+
+            <!-- Prominent Eco Quote Ticker Box (Continuously rolling short quotes) -->
+            <div class="ai-quote-ticker-box">
+              <div class="ai-quote-top-row">
+                <span class="ai-quote-badge">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"></path>
+                  </svg>
+                  <span>Impact Ticker</span>
+                </span>
+                <span class="ai-ticker-counter" id="ai-quote-number">1 / 5</span>
+              </div>
+
+              <!-- Rolling Quote Viewport -->
+              <div class="ai-quote-viewport">
+                <p class="ai-quote-text ticker-slide-enter" id="ai-quote-ticker-text">
+                  You're making the world a better place to live
+                </p>
+              </div>
+
+              <!-- Background Task Sub-Ticker (Saving image -> Removing bg -> Coin scale) -->
+              <div class="ai-task-sub-ticker">
+                <span class="ai-task-dot"></span>
+                <span class="ai-task-text" id="ai-tech-status-text">Saving image to Supabase cloud...</span>
+              </div>
+            </div>
+
+            <!-- Progress Bar & Cyber Percentage Counter -->
+            <div class="ai-progress-section">
+              <div class="ai-progress-meta">
+                <span class="ai-step-label" id="ai-current-step-label">Stage 1 of 4: Cloud Ingestion</span>
+                <span class="ai-percent-counter" id="ai-percent-counter">24%</span>
+              </div>
+              <div class="ai-progress-track">
+                <div class="ai-progress-bar" id="ai-progress-bar"></div>
+              </div>
+            </div>
+
+            <!-- Real-time Subsystem Status Badges -->
+            <div class="ai-subsystems-row">
+              <span class="subsystem-pill active" id="subsystem-storage">
+                <span class="subsystem-dot"></span>Storage Sync
+              </span>
+              <span class="subsystem-pill" id="subsystem-rembg">
+                <span class="subsystem-dot"></span>rembg AI Cutout
+              </span>
+              <span class="subsystem-pill" id="subsystem-opencv">
+                <span class="subsystem-dot"></span>Hough Coin Scale
+              </span>
+            </div>
+          </div>
+        </div>
+
+      </div> <!-- /app-viewport -->
+    </div> <!-- /phone-frame -->
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

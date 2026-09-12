@@ -1,0 +1,11 @@
+{
+  "name": "EcoStitch",
+  "short_name": "EcoStitch",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#EEF8EF",
+  "theme_color": "#234430",
+  "description": "Sustainable garment upcycling and transformation mobile app.",
+  "orientation": "portrait-primary",
+  "prefer_related_applications": false
+}

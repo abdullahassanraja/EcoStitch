@@ -1,0 +1,1 @@
+"""EcoStitch FastAPI Application Package."""
