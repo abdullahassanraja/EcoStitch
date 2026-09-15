@@ -12,17 +12,15 @@ _supabase_client: Optional[Client] = None
 
 
 def get_supabase_client() -> Client:
-    """Returns the singleton Supabase client initialized with the service_role key."""
+    """Returns the singleton Supabase client initialized with service_role or anon key."""
     global _supabase_client
     if _supabase_client is None:
-        if not settings.SUPABASE_SERVICE_ROLE_KEY:
-            raise ValueError(
-                "SUPABASE_SERVICE_ROLE_KEY is required to initialize the backend Supabase client. "
-                "Please configure it in your .env file."
-            )
+        auth_key = settings.SUPABASE_SERVICE_ROLE_KEY
+        if not auth_key or "your-supabase-service-role" in auth_key:
+            auth_key = settings.SUPABASE_ANON_KEY
         _supabase_client = create_client(
             settings.SUPABASE_URL,
-            settings.SUPABASE_SERVICE_ROLE_KEY,
+            auth_key,
         )
     return _supabase_client
 

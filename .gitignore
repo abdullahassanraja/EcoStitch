@@ -38,3 +38,11 @@ Thumbs.db
 .packages
 .pub-cache/
 .pub/
+
+# Test Profiles & Artifacts
+.edge-profile/
+.edge-test-profile/
+screenshot_*.png
+test_*.png
+test_edge.js
+

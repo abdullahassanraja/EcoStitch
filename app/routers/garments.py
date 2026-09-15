@@ -41,6 +41,18 @@ class PreprocessResponse(BaseModel):
     )
 
 
+import uuid
+
+
+def is_valid_uuid(val: str) -> bool:
+    """Checks if string is a valid UUID."""
+    try:
+        uuid.UUID(str(val))
+        return True
+    except (ValueError, AttributeError, TypeError):
+        return False
+
+
 @router.post(
     "/{garment_id}/preprocess",
     response_model=PreprocessResponse,
@@ -64,6 +76,13 @@ async def preprocess_garment(garment_id: str) -> PreprocessResponse:
     7. Updates garment row to status='preprocessed' with metadata.
     8. Returns preprocessing results.
     """
+    if not is_valid_uuid(garment_id):
+        logger.warning(f"Garment ID '{garment_id}' is not a valid UUID format.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Garment '{garment_id}' was not found in the database (invalid UUID).",
+        )
+
     # 1. Look up garment row in Supabase database
     try:
         garment = get_garment_by_id(garment_id)
@@ -194,3 +213,87 @@ async def preprocess_garment(garment_id: str) -> PreprocessResponse:
         reference_object_pixel_diameter=coin_diameter_px,
         cutout_image_url=cutout_storage_path,
     )
+
+
+class DirectPreprocessRequest(BaseModel):
+    """Payload for directly preprocessing an image payload."""
+    image_data: str = Field(..., description="DataURL or base64 encoded image string")
+    garment_id: Optional[str] = Field(None, description="Optional associated garment identifier")
+
+
+class DirectPreprocessResponse(BaseModel):
+    """Direct preprocessing response with dataURL and metadata."""
+    status: str = "preprocessed"
+    garment_id: Optional[str] = None
+    reference_object_detected: bool = False
+    reference_object_pixel_diameter: Optional[float] = None
+    cutout_data_url: str = Field(..., description="DataURL of the isolated PNG garment cutout")
+    cutout_storage_path: Optional[str] = None
+
+
+@router.post(
+    "/preprocess-image",
+    response_model=DirectPreprocessResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Directly preprocess image bytes with rembg AI and Hough coin scale",
+)
+async def preprocess_image_direct(payload: DirectPreprocessRequest) -> DirectPreprocessResponse:
+    """Preprocesses an image directly sent from the web or mobile frontend:
+
+    1. Decodes DataURL/base64 string to raw image bytes.
+    2. Runs rembg neural network background removal (u2net model).
+    3. Runs OpenCV HoughCircles reference coin detection.
+    4. Encodes cutout back to data:image/png;base64,... format.
+    5. Returns instant high-accuracy cutout directly to the client.
+    """
+    import base64
+
+    # 1. Parse raw image bytes
+    raw_str = payload.image_data
+    if "," in raw_str:
+        raw_str = raw_str.split(",", 1)[1]
+
+    try:
+        image_bytes = base64.b64decode(raw_str)
+    except Exception as e:
+        logger.error(f"Failed to decode base64 image data: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid base64 image data: {e}",
+        )
+
+    # 2. Run rembg background removal
+    try:
+        cutout_bytes = remove_background(image_bytes)
+    except Exception as e:
+        logger.error(f"rembg background removal failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"AI background removal failed: {e}",
+        )
+
+    # 3. Run reference coin detection
+    coin_detected, coin_diameter_px = detect_reference_coin(image_bytes)
+
+    # 4. Convert cutout bytes to DataURL
+    b64_cutout = base64.b64encode(cutout_bytes).decode("utf-8")
+    cutout_data_url = f"data:image/png;base64,{b64_cutout}"
+
+    # 5. Optional background storage sync if garment_id provided
+    storage_path = None
+    if payload.garment_id:
+        try:
+            storage_path = f"processed/{payload.garment_id}_cutout.png"
+            upload_cutout_image(storage_path, cutout_bytes)
+        except Exception as sync_err:
+            logger.info(f"Supabase cutout sync note (non-fatal): {sync_err}")
+
+    return DirectPreprocessResponse(
+        status="preprocessed",
+        garment_id=payload.garment_id,
+        reference_object_detected=coin_detected,
+        reference_object_pixel_diameter=coin_diameter_px,
+        cutout_data_url=cutout_data_url,
+        cutout_storage_path=storage_path,
+    )
+

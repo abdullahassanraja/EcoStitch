@@ -10,10 +10,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
 
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+
   <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=20260915_01">
 </head>
 <body>
 
@@ -582,7 +586,7 @@
               </div>
             </div>
 
-            <!-- Prominent Eco Quote Ticker Box (Continuously rolling short quotes) -->
+            <!-- Prominent Eco Dynamic Text Ticker: making the world [thrive, a better place, greener...] -->
             <div class="ai-quote-ticker-box">
               <div class="ai-quote-top-row">
                 <span class="ai-quote-badge">
@@ -591,14 +595,17 @@
                   </svg>
                   <span>Impact Ticker</span>
                 </span>
-                <span class="ai-ticker-counter" id="ai-quote-number">1 / 5</span>
+                <span class="ai-ticker-counter" id="ai-quote-number">1 / 6</span>
               </div>
 
-              <!-- Rolling Quote Viewport -->
-              <div class="ai-quote-viewport">
-                <p class="ai-quote-text ticker-slide-enter" id="ai-quote-ticker-text">
-                  You're making the world a better place to live
-                </p>
+              <!-- Rolling Headline Viewport: making the world [thrive, a better place, greener...] -->
+              <div class="ai-headline-ticker-viewport">
+                <div class="ai-ticker-phrase">
+                  <span class="ticker-base-prefix">making the world</span>
+                  <div class="ticker-word-track">
+                    <span class="ticker-dynamic-word" id="ai-ticker-dynamic-word">thrive</span>
+                  </div>
+                </div>
               </div>
 
               <!-- Background Task Sub-Ticker (Saving image -> Removing bg -> Coin scale) -->
@@ -639,6 +646,6 @@
 
   </main>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=20260915_01"></script>
 </body>
 </html>

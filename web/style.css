@@ -870,7 +870,8 @@ html, body {
 #captured-preview-img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  background: #14171A;
   display: none;
 }
 
@@ -1259,6 +1260,8 @@ html, body {
 
 .btn-upload-photo:hover {
   background: var(--surface-gray);
+}
+
 /* ==========================================================================
    AI PREPROCESSING LOADING SCREEN & OVERLAY (Futuristic Cyber-Eco Aesthetic)
    ========================================================================== */
@@ -1502,42 +1505,56 @@ html, body {
   color: #A3B5A8;
 }
 
-.ai-quote-viewport {
-  min-height: 48px;
+/* Dynamic Headline Ticker: "making the world [thrive, a better place, greener]" */
+.ai-headline-ticker-viewport {
+  min-height: 58px;
   display: flex;
   align-items: center;
-  overflow: hidden;
+  justify-content: center;
+  overflow: visible;
   position: relative;
+  margin: 6px 0 8px;
 }
 
-.ai-quote-text {
+.ai-ticker-phrase {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  text-align: center;
+  width: 100%;
+}
+
+.ticker-base-prefix {
   font-family: var(--font-display);
   font-size: 15px;
   font-weight: 700;
-  line-height: 1.35;
-  color: var(--pure-white);
-  text-shadow: 0 0 12px rgba(204, 255, 0, 0.35);
-  margin: 0;
-  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  letter-spacing: 0.04em;
+  color: #B5C9BC;
+  text-transform: lowercase;
 }
 
-/* Vertical Slide Animation for Ticker */
-.ticker-slide-enter {
-  animation: quote-slide-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+.ticker-word-track {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  position: relative;
 }
 
-@keyframes quote-slide-in {
-  0% { transform: translateY(18px); opacity: 0; filter: blur(3px); }
-  100% { transform: translateY(0); opacity: 1; filter: blur(0); }
-}
-
-.ticker-slide-exit {
-  animation: quote-slide-out 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-@keyframes quote-slide-out {
-  0% { transform: translateY(0); opacity: 1; filter: blur(0); }
-  100% { transform: translateY(-16px); opacity: 0; filter: blur(3px); }
+.ticker-dynamic-word {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.25;
+  color: var(--electric-lime);
+  text-shadow: 0 0 20px rgba(204, 255, 0, 0.6), 0 0 40px rgba(204, 255, 0, 0.25);
+  display: inline-block;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+  transition: opacity 0.22s ease-out, transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
 }
 
 /* Background Technical Task Sub-Ticker */
@@ -1664,10 +1681,28 @@ html, body {
 }
 
 /* ==========================================================================
-   PREPROCESSED RESULT VIEW (Exact Same Size as the First Upload Screen)
+   PREPROCESSED RESULT VIEW (Guaranteed Screen Fit in Size)
    ========================================================================== */
+#capture-screen .screen-content.result-view-active {
+  padding: 8px 16px 14px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+#capture-screen .screen-content.result-view-active .preprocessed-result-card {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  height: 100%;
+  justify-content: space-between;
+}
+
 .preprocessed-result-card {
   width: 100%;
+  display: flex;
+  flex-direction: column;
   animation: result-fade-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
@@ -1676,15 +1711,16 @@ html, body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Full Viewfinder Size Canvas (Identical to .viewfinder-container on First Screen) */
+/* Viewfinder Size Canvas: Flexible height so entire card fits on screen without scrolling */
 .cutout-preview-canvas.full-viewfinder-size {
   width: 100%;
-  aspect-ratio: 4 / 3;
-  max-height: 42vh;
+  flex: 1;
+  min-height: 190px;
+  max-height: 44vh;
   border-radius: var(--radius-lg);
   position: relative;
   overflow: hidden;
-  margin-bottom: 18px;
+  margin-bottom: 10px;
   background-color: #14171A;
   background-image: 
     linear-gradient(45deg, #1C2025 25%, transparent 25%), 
@@ -1702,10 +1738,10 @@ html, body {
 .cutout-preview-canvas.full-viewfinder-size img {
   width: 100%;
   height: 100%;
-  max-width: 90%;
-  max-height: 90%;
+  max-width: 94%;
+  max-height: 94%;
   object-fit: contain;
-  filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.6)) drop-shadow(0 0 20px rgba(204, 255, 0, 0.15));
+  filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 16px rgba(204, 255, 0, 0.15));
   transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   z-index: 3;
 }
@@ -1715,11 +1751,11 @@ html, body {
 }
 
 .cutout-preview-canvas.full-viewfinder-size.show-original img {
-  max-width: 100%;
-  max-height: 100%;
+  max-width: 95%;
+  max-height: 95%;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   filter: none;
 }
 
@@ -1831,10 +1867,10 @@ html, body {
   align-items: center;
   justify-content: space-around;
   background: var(--pure-white);
-  padding: 10px 14px;
+  padding: 8px 12px;
   border-radius: var(--radius-md);
   border: 1px solid var(--surface-border);
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   box-shadow: var(--shadow-card);
 }
 
@@ -1845,14 +1881,14 @@ html, body {
 }
 
 .strip-label {
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
   color: var(--text-secondary);
 }
 
 .strip-val {
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 700;
   color: var(--onyx-black);
   margin-top: 2px;
@@ -1864,12 +1900,12 @@ html, body {
 
 .strip-val.mono {
   font-family: monospace;
-  font-size: 11px;
+  font-size: 10.5px;
 }
 
 .strip-divider {
   width: 1px;
-  height: 22px;
+  height: 20px;
   background: rgba(0, 0, 0, 0.08);
 }
 
@@ -1877,14 +1913,19 @@ html, body {
 .result-actions-compact {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
+}
+
+.result-actions-compact .primary-cta-button {
+  height: 48px;
+  font-size: 14px;
 }
 
 .secondary-pill-btn {
-  height: 48px;
+  height: 44px;
   border-radius: var(--radius-pill);
   font-family: var(--font-main);
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 700;
   border: 1px solid var(--surface-border);
   background: var(--pure-white);

@@ -164,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
           btnTakePhoto.querySelector('span').textContent = 'Snap picture';
           coinGuide.style.display = 'flex';
           btnRetake.style.display = 'none';
-          confirmationCard.style.display = 'none';
+          if (confirmationCard) confirmationCard.style.display = 'none';
 
         } catch (err) {
           console.warn('Camera access unavailable or declined, generating sample garment snapshot:', err);
@@ -224,7 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // AI Loading Screen Elements
   const aiLoadingModal = document.getElementById('ai-loading-modal');
   const aiScanThumb = document.getElementById('ai-scan-thumb');
-  const aiQuoteTickerText = document.getElementById('ai-quote-ticker-text');
+  const aiTickerDynamicWord = document.getElementById('ai-ticker-dynamic-word');
   const aiQuoteNumber = document.getElementById('ai-quote-number');
   const aiTechStatusText = document.getElementById('ai-tech-status-text');
   const aiCurrentStepLabel = document.getElementById('ai-current-step-label');
@@ -307,16 +307,17 @@ document.addEventListener('DOMContentLoaded', () => {
     return new Blob([ab], { type: mimeString });
   }
 
-  // Eco-Inspirational Quotes for the Dynamic Text Ticker
+  // Dynamic Ticker Words for "making the world [thrive, a better place, greener...]"
   // The user requested:
   // "when user click continue, while you saving and removing bg. show text ticker on the screen. you're making the world a better place to live (then it is replaced by similar different short quote)"
-  const ECO_QUOTES = [
-    "You're making the world a better place to live",
-    "One less garment in a landfill, one more creative piece",
-    "Every rescued thread writes a fresh sustainable story",
-    "Saving water, reducing waste, transforming style",
-    "Turning discarded fabric into everyday beauty",
-    "Small mindful choices create monumental global impact"
+  // "in frontend it should show the loading screen with text tickers making the world [thrive, a better place, greener] switching words like this."
+  const DYNAMIC_TICKER_WORDS = [
+    "thrive",
+    "a better place",
+    "greener",
+    "more sustainable",
+    "flourish",
+    "waste-free"
   ];
 
   function setPipelineStage(actionText, stepLabel, percentStr, subsystemState) {
@@ -347,6 +348,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function updateTickerWord(newWord) {
+    if (!aiTickerDynamicWord) return;
+    aiTickerDynamicWord.style.opacity = '0';
+    aiTickerDynamicWord.style.transform = 'translateY(-12px) scale(0.92)';
+
+    setTimeout(() => {
+      aiTickerDynamicWord.textContent = newWord;
+      aiTickerDynamicWord.style.transform = 'translateY(12px) scale(0.92)';
+      void aiTickerDynamicWord.offsetWidth; // Force layout reflow
+      aiTickerDynamicWord.style.opacity = '1';
+      aiTickerDynamicWord.style.transform = 'translateY(0) scale(1)';
+    }, 180);
+  }
+
   function startAILoadingAndPipeline() {
     if (!currentCapturedData) return;
 
@@ -358,38 +373,29 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // Set initial quote immediately
-    let quoteIdx = 0;
-    if (aiQuoteTickerText) {
-      aiQuoteTickerText.textContent = ECO_QUOTES[0];
-      aiQuoteTickerText.classList.remove('ticker-slide-exit');
-      aiQuoteTickerText.classList.add('ticker-slide-enter');
+    // Set initial dynamic word immediately
+    let wordIdx = 0;
+    if (aiTickerDynamicWord) {
+      aiTickerDynamicWord.textContent = DYNAMIC_TICKER_WORDS[0];
+      aiTickerDynamicWord.style.opacity = '1';
+      aiTickerDynamicWord.style.transform = 'translateY(0) scale(1)';
     }
     if (aiQuoteNumber) {
-      aiQuoteNumber.textContent = `1 / ${ECO_QUOTES.length}`;
+      aiQuoteNumber.textContent = `1 / ${DYNAMIC_TICKER_WORDS.length}`;
     }
 
     // Set initial technical status
     setPipelineStage('Saving image to Supabase cloud...', 'Stage 1 of 4: Cloud Ingestion', '22%', 'storage');
 
-    // Start rolling quote ticker: smoothly cycles quotes every 2000ms
+    // Start rolling dynamic word ticker: smoothly cycles words every 1300ms
     if (rollingInterval) clearInterval(rollingInterval);
     rollingInterval = setInterval(() => {
-      quoteIdx = (quoteIdx + 1) % ECO_QUOTES.length;
-      if (aiQuoteTickerText) {
-        aiQuoteTickerText.classList.remove('ticker-slide-enter');
-        aiQuoteTickerText.classList.add('ticker-slide-exit');
-
-        setTimeout(() => {
-          aiQuoteTickerText.textContent = ECO_QUOTES[quoteIdx];
-          aiQuoteTickerText.classList.remove('ticker-slide-exit');
-          aiQuoteTickerText.classList.add('ticker-slide-enter');
-        }, 220);
-      }
+      wordIdx = (wordIdx + 1) % DYNAMIC_TICKER_WORDS.length;
+      updateTickerWord(DYNAMIC_TICKER_WORDS[wordIdx]);
       if (aiQuoteNumber) {
-        aiQuoteNumber.textContent = `${quoteIdx + 1} / ${ECO_QUOTES.length}`;
+        aiQuoteNumber.textContent = `${wordIdx + 1} / ${DYNAMIC_TICKER_WORDS.length}`;
       }
-    }, 2000);
+    }, 1300);
 
     // Run the actual background pipeline
     executeFullPipeline();
@@ -461,27 +467,53 @@ document.addEventListener('DOMContentLoaded', () => {
         activeGarmentId = 'gmt_' + Math.random().toString(36).substring(2, 9);
       }
 
-      // STEP 2: Call FastAPI Preprocessing Endpoint (POST /garments/{id}/preprocess)
+      // STEP 2: Call FastAPI Preprocessing Endpoint (rembg AI & Hough Coin Detection)
       setPipelineStage('Removing background with rembg AI...', 'Stage 2 of 4: Neural Segmentation', '60%', 'rembg');
 
       try {
         console.info(`[EcoStitch] Invoking FastAPI Preprocessing for garment ${activeGarmentId}...`);
-        const preprocessResp = await fetch(`http://localhost:8000/garments/${activeGarmentId}/preprocess`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
-        });
+        
+        // Primary: Direct image preprocessing with local rembg u2net neural network
+        let preprocessResp = null;
+        try {
+          preprocessResp = await fetch('http://localhost:8000/garments/preprocess-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              image_data: currentCapturedData.srcUrl,
+              garment_id: activeGarmentId
+            })
+          });
+        } catch (directErr) {
+          console.warn('[EcoStitch] Direct preprocess endpoint fetch error:', directErr);
+        }
 
-        if (preprocessResp.ok) {
+        // Fallback: URL/Storage-based endpoint if direct endpoint wasn't reached
+        if (!preprocessResp || !preprocessResp.ok) {
+          try {
+            preprocessResp = await fetch(`http://localhost:8000/garments/${activeGarmentId}/preprocess`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' }
+            });
+          } catch (idErr) {
+            console.warn('[EcoStitch] ID preprocess endpoint fetch error:', idErr);
+          }
+        }
+
+        if (preprocessResp && preprocessResp.ok) {
           const preprocessData = await preprocessResp.json();
           console.info('[EcoStitch Preprocessing Success]:', preprocessData);
           coinDetected = preprocessData.reference_object_detected;
           coinDiameter = preprocessData.reference_object_pixel_diameter || 138.4;
-          if (preprocessData.cutout_image_url && supabaseClient) {
+          
+          if (preprocessData.cutout_data_url) {
+            cutoutUrl = preprocessData.cutout_data_url;
+          } else if (preprocessData.cutout_image_url && supabaseClient) {
             const { data: pubData } = supabaseClient.storage.from('garment-images').getPublicUrl(preprocessData.cutout_image_url);
             cutoutUrl = pubData?.publicUrl;
           }
         } else {
-          console.warn('[EcoStitch] Backend endpoint responded with status:', preprocessResp.status);
+          console.warn('[EcoStitch] Backend endpoint responded with status:', preprocessResp?.status);
         }
       } catch (backendFetchErr) {
         console.info('[EcoStitch Note] FastAPI backend offline or not yet started, creating transparent cutout demo:', backendFetchErr);
@@ -500,9 +532,9 @@ document.addEventListener('DOMContentLoaded', () => {
       // STEP 4: Ready
       setPipelineStage('Garment preprocessed & cutout synthesized ✨', 'Stage 4 of 4: Complete', '100%', 'complete');
 
-      // Ensure user experiences the full AI loading sequence and quote rolling (min 3.4 seconds)
+      // Ensure user experiences the full AI loading sequence and quote rolling (min 5.2 seconds)
       const elapsed = Date.now() - startTime;
-      const minDuration = 3400;
+      const minDuration = 5200;
       if (elapsed < minDuration) {
         await new Promise(r => setTimeout(r, minDuration - elapsed));
       }
@@ -512,6 +544,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     } catch (err) {
       console.error('[Pipeline Error]:', err);
+      // Wait minDuration even in catch block so ticker is always visible
+      const elapsed = Date.now() - startTime;
+      const minDuration = 5200;
+      if (elapsed < minDuration) {
+        await new Promise(r => setTimeout(r, minDuration - elapsed));
+      }
       if (rollingInterval) clearInterval(rollingInterval);
       if (aiLoadingModal) aiLoadingModal.style.display = 'none';
 
@@ -521,38 +559,112 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Client-side Transparent Cutout Generator (Canvas AI Simulator)
+  // Client-side Transparent Cutout Generator (Border Flood-Fill & Color Clustering Fallback)
   function generateClientSideCutout(dataUrl) {
     return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
+        const maxDim = 800;
+        let w = img.width;
+        let h = img.height;
+        if (w > maxDim || h > maxDim) {
+          if (w > h) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          } else {
+            w = Math.round((w * maxDim) / h);
+            h = maxDim;
+          }
+        }
+        canvas.width = w;
+        canvas.height = h;
         const ctx = canvas.getContext('2d');
 
-        // Draw original
-        ctx.drawImage(img, 0, 0);
+        // Draw original scaled
+        ctx.drawImage(img, 0, 0, w, h);
 
         // Extract image data
-        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const imgData = ctx.getImageData(0, 0, w, h);
         const data = imgData.data;
 
-        // Sample corner color as background baseline
-        const bgR = data[0], bgG = data[1], bgB = data[2];
-        const threshold = 45;
+        // Collect background seed colors from all 4 borders (perimeter)
+        const bgColors = [];
+        const step = 8;
+        for (let x = 0; x < w; x += step) {
+          // Top edge
+          let iTop = (0 * w + x) * 4;
+          bgColors.push([data[iTop], data[iTop + 1], data[iTop + 2]]);
+          // Bottom edge
+          let iBot = ((h - 1) * w + x) * 4;
+          bgColors.push([data[iBot], data[iBot + 1], data[iBot + 2]]);
+        }
+        for (let y = 0; y < h; y += step) {
+          // Left edge
+          let iLeft = (y * w + 0) * 4;
+          bgColors.push([data[iLeft], data[iLeft + 1], data[iLeft + 2]]);
+          // Right edge
+          let iRight = (y * w + (w - 1)) * 4;
+          bgColors.push([data[iRight], data[iRight + 1], data[iRight + 2]]);
+        }
 
-        // Remove background pixels similar to background color
-        for (let i = 0; i < data.length; i += 4) {
-          const r = data[i];
-          const g = data[i + 1];
-          const b = data[i + 2];
-          const dist = Math.sqrt(
-            Math.pow(r - bgR, 2) + Math.pow(g - bgG, 2) + Math.pow(b - bgB, 2)
-          );
+        // Check if a pixel matches any background seed color within threshold
+        const threshold = 55;
+        function isBgColor(r, g, b) {
+          for (let k = 0; k < bgColors.length; k += 4) {
+            const bg = bgColors[k];
+            const dist = Math.sqrt(
+              Math.pow(r - bg[0], 2) + Math.pow(g - bg[1], 2) + Math.pow(b - bg[2], 2)
+            );
+            if (dist < threshold) return true;
+          }
+          return false;
+        }
 
-          if (dist < threshold) {
-            data[i + 3] = 0; // Transparent
+        // Flood fill from all 4 borders inwards using a visited map
+        const visited = new Uint8Array(w * h);
+        const queue = [];
+
+        // Push border pixels that match background colors to queue
+        for (let x = 0; x < w; x++) {
+          queue.push(0 * w + x);
+          queue.push((h - 1) * w + x);
+          visited[0 * w + x] = 1;
+          visited[(h - 1) * w + x] = 1;
+        }
+        for (let y = 0; y < h; y++) {
+          queue.push(y * w + 0);
+          queue.push(y * w + (w - 1));
+          visited[y * w + 0] = 1;
+          visited[y * w + (w - 1)] = 1;
+        }
+
+        let head = 0;
+        while (head < queue.length) {
+          const idx = queue[head++];
+          const px = idx % w;
+          const py = Math.floor(idx / w);
+          const i4 = idx * 4;
+          const r = data[i4], g = data[i4 + 1], b = data[i4 + 2];
+
+          if (isBgColor(r, g, b)) {
+            data[i4 + 3] = 0; // Make background transparent
+
+            // Check 4 neighbors
+            const neighbors = [
+              px > 0 ? idx - 1 : -1,
+              px < w - 1 ? idx + 1 : -1,
+              py > 0 ? idx - w : -1,
+              py < h - 1 ? idx + w : -1
+            ];
+
+            for (let n = 0; n < neighbors.length; n++) {
+              const nIdx = neighbors[n];
+              if (nIdx >= 0 && !visited[nIdx]) {
+                visited[nIdx] = 1;
+                queue.push(nIdx);
+              }
+            }
           }
         }
 
@@ -564,10 +676,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Display the Preprocessed Result (Exact Same Size as the First Upload Screen)
+  // Display the Preprocessed Result (Sized perfectly to fit the screen)
   function showPreprocessedResultView(coinDetected, coinDiameter) {
     if (rollingInterval) clearInterval(rollingInterval);
     if (aiLoadingModal) aiLoadingModal.style.display = 'none';
+
+    // Optimize screen-content container for result view (removes 96px bottom buffer)
+    const captureContent = document.querySelector('#capture-screen .screen-content');
+    if (captureContent) {
+      captureContent.classList.add('result-view-active');
+      captureContent.scrollTop = 0;
+    }
 
     // Hide viewfinder, tip banner & actions bar to guarantee zero scrolling needed
     if (viewfinder) viewfinder.style.display = 'none';
@@ -654,6 +773,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (captureActionsBar) captureActionsBar.style.display = 'flex';
     const captureTipBanner = document.getElementById('capture-tip-banner');
     if (captureTipBanner) captureTipBanner.style.display = 'flex';
+
+    const captureContent = document.querySelector('#capture-screen .screen-content');
+    if (captureContent) {
+      captureContent.classList.remove('result-view-active');
+    }
 
     currentCapturedData = null;
     activeGarmentId = null;

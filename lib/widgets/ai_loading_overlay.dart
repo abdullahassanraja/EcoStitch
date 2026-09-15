@@ -8,6 +8,7 @@ import '../theme/app_theme.dart';
 
 class AILoadingStage {
   final String text;
+  final String dynamicWord;
   final String detail;
   final String step;
   final double progress;
@@ -15,6 +16,7 @@ class AILoadingStage {
 
   const AILoadingStage({
     required this.text,
+    required this.dynamicWord,
     required this.detail,
     required this.step,
     required this.progress,
@@ -52,28 +54,32 @@ class _AILoadingOverlayState extends State<AILoadingOverlay>
 
   static const List<AILoadingStage> _stages = [
     AILoadingStage(
-      text: "You're making the world a better place to live",
+      text: "making the world",
+      dynamicWord: "thrive",
       detail: 'Saving image to Supabase cloud storage...',
       step: 'Stage 1 of 4: Cloud Ingestion',
       progress: 0.24,
       subsystem: 'Storage Sync',
     ),
     AILoadingStage(
-      text: 'One less garment in a landfill, one more creative piece',
+      text: "making the world",
+      dynamicWord: "a better place",
       detail: 'Removing background with rembg AI...',
       step: 'Stage 2 of 4: Neural Segmentation',
       progress: 0.60,
       subsystem: 'rembg AI',
     ),
     AILoadingStage(
-      text: 'Every rescued thread writes a fresh sustainable story',
+      text: "making the world",
+      dynamicWord: "greener",
       detail: 'Detecting reference coin & scale calibration 🪙',
       step: 'Stage 3 of 4: Scale Calibration',
       progress: 0.86,
       subsystem: 'Hough Scale',
     ),
     AILoadingStage(
-      text: 'Saving water, reducing waste, transforming style',
+      text: "making the world",
+      dynamicWord: "more sustainable",
       detail: 'Preprocessed cutout blueprint ready ✨',
       step: 'Complete: Ready for Upcycling',
       progress: 1.0,
@@ -387,14 +393,27 @@ class _AILoadingOverlayState extends State<AILoadingOverlay>
                 children: [
                   Text(
                     currentStage.text,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w700,
-                      height: 1.3,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.80),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.2,
                     ),
                   ),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 2),
+                  Text(
+                    currentStage.dynamicWord,
+                    style: const TextStyle(
+                      color: Color(0xFFCCFF00),
+                      fontSize: 19,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.2,
+                      shadows: [
+                        Shadow(color: Color(0x80CCFF00), blurRadius: 16),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
                   Text(
                     currentStage.detail,
                     style: TextStyle(

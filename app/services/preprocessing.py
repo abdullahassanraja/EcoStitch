@@ -8,11 +8,21 @@ Implements:
 from typing import Optional, Tuple
 import cv2
 import numpy as np
-from rembg import remove
+import rembg
+
+_rembg_session = None
+
+
+def get_rembg_session():
+    """Returns the cached u2netp session for fast neural network segmentation."""
+    global _rembg_session
+    if _rembg_session is None:
+        _rembg_session = rembg.new_session("u2netp")
+    return _rembg_session
 
 
 def remove_background(image_bytes: bytes) -> bytes:
-    """Removes the background from a garment image using rembg (u2net model).
+    """Removes the background from a garment image using rembg (u2net neural network).
 
     Args:
         image_bytes: Raw bytes of the uploaded JPEG/PNG garment image.
@@ -24,7 +34,8 @@ def remove_background(image_bytes: bytes) -> bytes:
         Exception: If rembg fails to process the image.
     """
     try:
-        cutout_bytes = remove(image_bytes)
+        session = get_rembg_session()
+        cutout_bytes = rembg.remove(image_bytes, session=session)
         if not cutout_bytes:
             raise ValueError("Background removal returned empty result.")
         return cutout_bytes

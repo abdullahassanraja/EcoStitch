@@ -18,6 +18,10 @@ class Settings:
     """Application settings loaded from environment variables."""
 
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "https://pxwzpklkpbiycslxytqm.supabase.co")
+    SUPABASE_ANON_KEY: str = os.getenv(
+        "SUPABASE_ANON_KEY",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4d3pwa2xrcGJpeWNzbHh5dHFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4ODkzNjQsImV4cCI6MjEwNDQ2NTM2NH0.waPaLKcslvzc6SyTIHDHE2TQaIZ1DcjoERVZ3Om2CLI"
+    )
     SUPABASE_SERVICE_ROLE_KEY: str = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 
     # Storage and Table Names
