@@ -186,6 +186,34 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  function optimizeImageResolution(dataUrl, maxDimension = 1280) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width;
+        let h = img.height;
+        if (w <= maxDimension && h <= maxDimension) {
+          return resolve(dataUrl);
+        }
+        if (w > h) {
+          h = Math.round((h * maxDimension) / w);
+          w = maxDimension;
+        } else {
+          w = Math.round((w * maxDimension) / h);
+          h = maxDimension;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.92));
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    });
+  }
+
   if (btnUploadPhoto && filePickerInput) {
     btnUploadPhoto.addEventListener('click', () => {
       filePickerInput.click();
@@ -195,9 +223,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const file = e.target.files[0];
       if (file) {
         const reader = new FileReader();
-        reader.onload = (event) => {
-          const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
-          displayCapturedImage(event.target.result, file.name, `${sizeMb} MB`);
+        reader.onload = async (event) => {
+          const rawData = event.target.result;
+          const optimizedData = await optimizeImageResolution(rawData, 1280);
+          const sizeMb = (optimizedData.length * 0.75 / (1024 * 1024)).toFixed(1);
+          displayCapturedImage(optimizedData, file.name, `${sizeMb} MB`);
         };
         reader.readAsDataURL(file);
       }
@@ -408,10 +438,16 @@ document.addEventListener('DOMContentLoaded', () => {
     let cutoutUrl = null;
 
     try {
-      // STEP 1: Upload to Supabase Storage & Insert record into garments table
+      if (!activeGarmentId) {
+        activeGarmentId = 'gmt_' + Math.random().toString(36).substring(2, 9);
+      }
+
+      // STEP 1: Cloud Ingestion & Storage
       setPipelineStage('Saving image to Supabase cloud...', 'Stage 1 of 4: Cloud Ingestion', '25%', 'storage');
 
-      if (supabaseClient) {
+      // Start Supabase cloud ingestion task
+      const supabaseTask = (async () => {
+        if (!supabaseClient) return null;
         try {
           let session = null;
           try {
@@ -458,69 +494,57 @@ document.addEventListener('DOMContentLoaded', () => {
               console.info(`[EcoStitch] Garment created in database with ID: ${activeGarmentId}`);
             }
           }
+          return storagePath;
         } catch (supabaseErr) {
           console.warn('[EcoStitch] Supabase direct client note:', supabaseErr);
+          return null;
         }
-      }
+      })();
 
-      if (!activeGarmentId) {
-        activeGarmentId = 'gmt_' + Math.random().toString(36).substring(2, 9);
-      }
-
-      // STEP 2: Call FastAPI Preprocessing Endpoint (rembg AI & Hough Coin Detection)
-      setPipelineStage('Removing background with rembg AI...', 'Stage 2 of 4: Neural Segmentation', '60%', 'rembg');
-
-      try {
-        console.info(`[EcoStitch] Invoking FastAPI Preprocessing for garment ${activeGarmentId}...`);
-        
-        // Primary: Direct image preprocessing with local rembg u2net neural network
-        let preprocessResp = null;
+      // STEP 2: Light adjustment, brightness adjustment & neural background removal
+      const preprocessTask = (async () => {
         try {
-          preprocessResp = await fetch('http://localhost:8000/garments/preprocess-image', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              image_data: currentCapturedData.srcUrl,
-              garment_id: activeGarmentId
-            })
-          });
-        } catch (directErr) {
-          console.warn('[EcoStitch] Direct preprocess endpoint fetch error:', directErr);
-        }
-
-        // Fallback: URL/Storage-based endpoint if direct endpoint wasn't reached
-        if (!preprocessResp || !preprocessResp.ok) {
+          console.info(`[EcoStitch] Invoking FastAPI Preprocessing for garment ${activeGarmentId}...`);
+          let preprocessResp = null;
           try {
-            preprocessResp = await fetch(`http://localhost:8000/garments/${activeGarmentId}/preprocess`, {
+            preprocessResp = await fetch('http://localhost:8000/garments/preprocess-image', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' }
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                image_data: currentCapturedData.srcUrl,
+                garment_id: activeGarmentId
+              })
             });
-          } catch (idErr) {
-            console.warn('[EcoStitch] ID preprocess endpoint fetch error:', idErr);
+          } catch (directErr) {
+            console.warn('[EcoStitch] Direct preprocess endpoint fetch error:', directErr);
           }
-        }
 
-        if (preprocessResp && preprocessResp.ok) {
-          const preprocessData = await preprocessResp.json();
-          console.info('[EcoStitch Preprocessing Success]:', preprocessData);
-          coinDetected = preprocessData.reference_object_detected;
-          coinDiameter = preprocessData.reference_object_pixel_diameter || 138.4;
-          
-          if (preprocessData.cutout_data_url) {
-            cutoutUrl = preprocessData.cutout_data_url;
-          } else if (preprocessData.cutout_image_url && supabaseClient) {
-            const { data: pubData } = supabaseClient.storage.from('garment-images').getPublicUrl(preprocessData.cutout_image_url);
-            cutoutUrl = pubData?.publicUrl;
+          if (preprocessResp && preprocessResp.ok) {
+            return await preprocessResp.json();
           }
-        } else {
-          console.warn('[EcoStitch] Backend endpoint responded with status:', preprocessResp?.status);
+          return null;
+        } catch (err) {
+          console.warn('[EcoStitch] Preprocessing task error:', err);
+          return null;
         }
-      } catch (backendFetchErr) {
-        console.info('[EcoStitch Note] FastAPI backend offline or not yet started, creating transparent cutout demo:', backendFetchErr);
+      })();
+
+      // Advance stage indicator to show preprocessing in flight
+      setTimeout(() => {
+        setPipelineStage('Adjusting lighting, brightness & preprocessing...', 'Stage 2 of 4: Neural Preprocessing', '55%', 'rembg');
+      }, 250);
+
+      // Await preprocessing result
+      const preprocessData = await preprocessTask;
+      if (preprocessData) {
+        console.info('[EcoStitch Preprocessing Success]:', preprocessData);
+        coinDetected = preprocessData.reference_object_detected;
+        coinDiameter = preprocessData.reference_object_pixel_diameter || 138.4;
+        cutoutUrl = preprocessData.cutout_data_url;
       }
 
-      // STEP 3: Reference Object Detection & Calibration
-      setPipelineStage('Detecting reference coin & scale calibration...', 'Stage 3 of 4: Computer Vision', '86%', 'opencv');
+      // STEP 3: Object Framing & Coin Scale Calibration
+      setPipelineStage('Isolating main object & zoom framing...', 'Stage 3 of 4: Object Framing', '85%', 'opencv');
 
       // Fallback: If no remote cutout was loaded, generate client-side transparent cutout
       if (!cutoutUrl) {
@@ -532,24 +556,25 @@ document.addEventListener('DOMContentLoaded', () => {
       // STEP 4: Ready
       setPipelineStage('Garment preprocessed & cutout synthesized ✨', 'Stage 4 of 4: Complete', '100%', 'complete');
 
-      // Ensure user experiences the full AI loading sequence and quote rolling (min 5.2 seconds)
+      // Snappy smooth transition (min 600ms total elapsed time for visual feedback)
       const elapsed = Date.now() - startTime;
-      const minDuration = 5200;
+      const minDuration = 600;
       if (elapsed < minDuration) {
         await new Promise(r => setTimeout(r, minDuration - elapsed));
+      } else {
+        await new Promise(r => setTimeout(r, 150));
       }
 
       // Transition to Result View!
       showPreprocessedResultView(coinDetected, coinDiameter);
 
+      // Ensure Supabase ingestion task resolves cleanly
+      supabaseTask.then((path) => {
+        if (path) console.info('[EcoStitch] Supabase cloud record verified:', path);
+      });
+
     } catch (err) {
       console.error('[Pipeline Error]:', err);
-      // Wait minDuration even in catch block so ticker is always visible
-      const elapsed = Date.now() - startTime;
-      const minDuration = 5200;
-      if (elapsed < minDuration) {
-        await new Promise(r => setTimeout(r, minDuration - elapsed));
-      }
       if (rollingInterval) clearInterval(rollingInterval);
       if (aiLoadingModal) aiLoadingModal.style.display = 'none';
 
@@ -581,8 +606,10 @@ document.addEventListener('DOMContentLoaded', () => {
         canvas.height = h;
         const ctx = canvas.getContext('2d');
 
-        // Draw original scaled
+        // Light & contrast pre-adjustment
+        ctx.filter = 'brightness(1.04) contrast(1.06)';
         ctx.drawImage(img, 0, 0, w, h);
+        ctx.filter = 'none';
 
         // Extract image data
         const imgData = ctx.getImageData(0, 0, w, h);
@@ -590,28 +617,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Collect background seed colors from all 4 borders (perimeter)
         const bgColors = [];
-        const step = 8;
+        const step = 6;
         for (let x = 0; x < w; x += step) {
-          // Top edge
           let iTop = (0 * w + x) * 4;
           bgColors.push([data[iTop], data[iTop + 1], data[iTop + 2]]);
-          // Bottom edge
           let iBot = ((h - 1) * w + x) * 4;
           bgColors.push([data[iBot], data[iBot + 1], data[iBot + 2]]);
         }
         for (let y = 0; y < h; y += step) {
-          // Left edge
           let iLeft = (y * w + 0) * 4;
           bgColors.push([data[iLeft], data[iLeft + 1], data[iLeft + 2]]);
-          // Right edge
           let iRight = (y * w + (w - 1)) * 4;
           bgColors.push([data[iRight], data[iRight + 1], data[iRight + 2]]);
         }
 
         // Check if a pixel matches any background seed color within threshold
-        const threshold = 55;
+        const threshold = 48;
         function isBgColor(r, g, b) {
-          for (let k = 0; k < bgColors.length; k += 4) {
+          for (let k = 0; k < bgColors.length; k += 2) {
             const bg = bgColors[k];
             const dist = Math.sqrt(
               Math.pow(r - bg[0], 2) + Math.pow(g - bg[1], 2) + Math.pow(b - bg[2], 2)
@@ -625,7 +648,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const visited = new Uint8Array(w * h);
         const queue = [];
 
-        // Push border pixels that match background colors to queue
         for (let x = 0; x < w; x++) {
           queue.push(0 * w + x);
           queue.push((h - 1) * w + x);
@@ -650,7 +672,6 @@ document.addEventListener('DOMContentLoaded', () => {
           if (isBgColor(r, g, b)) {
             data[i4 + 3] = 0; // Make background transparent
 
-            // Check 4 neighbors
             const neighbors = [
               px > 0 ? idx - 1 : -1,
               px < w - 1 ? idx + 1 : -1,
@@ -669,7 +690,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         ctx.putImageData(imgData, 0, 0);
-        resolve(canvas.toDataURL('image/png'));
+
+        // Zoom to fit frame: tightly crop around bounding box
+        let minX = w, minY = h, maxX = 0, maxY = 0;
+        let hasOpaque = false;
+        for (let y = 0; y < h; y++) {
+          for (let x = 0; x < w; x++) {
+            const a = data[(y * w + x) * 4 + 3];
+            if (a > 30) {
+              hasOpaque = true;
+              if (x < minX) minX = x;
+              if (x > maxX) maxX = x;
+              if (y < minY) minY = y;
+              if (y > maxY) maxY = y;
+            }
+          }
+        }
+
+        if (hasOpaque && maxX > minX && maxY > minY) {
+          const padX = Math.max(6, Math.round((maxX - minX) * 0.04));
+          const padY = Math.max(6, Math.round((maxY - minY) * 0.04));
+          const cropX = Math.max(0, minX - padX);
+          const cropY = Math.max(0, minY - padY);
+          const cropW = Math.min(w - cropX, (maxX - minX) + padX * 2);
+          const cropH = Math.min(h - cropY, (maxY - minY) + padY * 2);
+
+          const cropCanvas = document.createElement('canvas');
+          cropCanvas.width = cropW;
+          cropCanvas.height = cropH;
+          const cropCtx = cropCanvas.getContext('2d');
+          cropCtx.drawImage(canvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+          resolve(cropCanvas.toDataURL('image/png'));
+        } else {
+          resolve(canvas.toDataURL('image/png'));
+        }
       };
       img.onerror = () => resolve(dataUrl);
       img.src = dataUrl;

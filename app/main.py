@@ -42,6 +42,18 @@ app.add_middleware(
 app.include_router(garments.router)
 
 
+@app.on_event("startup")
+async def startup_event():
+    """Pre-warms the rembg neural network session so first user inference has zero latency."""
+    logger.info("Pre-warming rembg neural network session for instant zero-latency processing...")
+    from app.services.preprocessing import get_rembg_session
+    try:
+        get_rembg_session()
+        logger.info("rembg session pre-warmed and ready!")
+    except Exception as e:
+        logger.warning(f"rembg pre-warm notice: {e}")
+
+
 @app.get("/", tags=["General"])
 async def root():
     """Root metadata endpoint."""

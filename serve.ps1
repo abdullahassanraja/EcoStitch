@@ -7,12 +7,22 @@ if (-not (Test-Path $webRoot)) {
     exit 1
 }
 
+# Check and start FastAPI Backend on port 8000 if not active
+$backendConn = Test-NetConnection -ComputerName 127.0.0.1 -Port 8000 -InformationLevel Quiet -WarningAction SilentlyContinue
+if (-not $backendConn) {
+    Write-Host "Starting EcoStitch FastAPI Backend on http://127.0.0.1:8000..." -ForegroundColor Cyan
+    $backendJob = Start-Process python -ArgumentList "-m uvicorn app.main:app --host 127.0.0.1 --port 8000" -PassThru -WindowStyle Hidden
+    Start-Sleep -Seconds 2
+} else {
+    Write-Host "EcoStitch FastAPI Backend is active on http://127.0.0.1:8000" -ForegroundColor Green
+}
+
 $listener = New-Object System.Net.HttpListener
 $listener.Prefixes.Add("http://localhost:$port/")
 
 try {
     $listener.Start()
-    Write-Host "EcoStitch Web Server running at http://localhost:$($port)/"
+    Write-Host "EcoStitch Web Server running at http://localhost:$($port)/" -ForegroundColor Green
     Write-Host "Serving static files from: $webRoot"
 } catch {
     Write-Error "Failed to start listener on port $($port): $_"

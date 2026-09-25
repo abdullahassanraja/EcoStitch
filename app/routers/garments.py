@@ -10,10 +10,14 @@ Implements Step 3: POST /garments/{garment_id}/preprocess
 
 import logging
 from typing import Optional
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, HTTPException, status
 from pydantic import BaseModel, Field
 
-from app.services.preprocessing import detect_reference_coin, remove_background
+from app.services.preprocessing import (
+    detect_reference_coin,
+    preprocess_and_clean_garment,
+    remove_background,
+)
 from app.services.supabase_client import (
     download_garment_image,
     get_garment_by_id,
@@ -139,11 +143,11 @@ async def preprocess_garment(garment_id: str) -> PreprocessResponse:
             detail=error_msg,
         )
 
-    # 4. Run rembg background removal
+    # 4. Run preprocessing pipeline (light/brightness adjustment, rembg, object isolation, zoom framing & coin detection)
     try:
-        cutout_bytes = remove_background(image_bytes)
+        cutout_bytes, coin_detected, coin_diameter_px = preprocess_and_clean_garment(image_bytes)
     except Exception as e:
-        error_msg = f"Background removal failed for garment '{garment_id}': {e}"
+        error_msg = f"Garment preprocessing failed for garment '{garment_id}': {e}"
         logger.error(error_msg)
         try:
             update_garment_status(
@@ -157,10 +161,6 @@ async def preprocess_garment(garment_id: str) -> PreprocessResponse:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_msg,
         )
-
-    # 5. Run reference coin detection pass (OpenCV HoughCircles)
-    # Does not fail the request if no coin is found
-    coin_detected, coin_diameter_px = detect_reference_coin(image_bytes)
 
     # 6. Upload cutout image to Supabase Storage ({user_id}/{garment_id}_cutout.png)
     # Maintain user folder structure
@@ -235,16 +235,23 @@ class DirectPreprocessResponse(BaseModel):
     "/preprocess-image",
     response_model=DirectPreprocessResponse,
     status_code=status.HTTP_200_OK,
-    summary="Directly preprocess image bytes with rembg AI and Hough coin scale",
+    summary="Directly preprocess image bytes with lighting adjustment, object isolation, zoom framing, and rembg",
 )
-async def preprocess_image_direct(payload: DirectPreprocessRequest) -> DirectPreprocessResponse:
+async def preprocess_image_direct(
+    payload: DirectPreprocessRequest,
+    background_tasks: BackgroundTasks,
+) -> DirectPreprocessResponse:
     """Preprocesses an image directly sent from the web or mobile frontend:
 
     1. Decodes DataURL/base64 string to raw image bytes.
-    2. Runs rembg neural network background removal (u2net model).
-    3. Runs OpenCV HoughCircles reference coin detection.
-    4. Encodes cutout back to data:image/png;base64,... format.
-    5. Returns instant high-accuracy cutout directly to the client.
+    2. Corrects EXIF orientation and normalizes resolution.
+    3. Adjusts light & brightness (LAB adaptive CLAHE + auto-gamma).
+    4. Runs neural network background removal (rembg u2netp).
+    5. Isolates the main garment object (discarding stray table/background artifacts).
+    6. Fits into frame by zoom-cropping around the bounding box.
+    7. Detects reference coin via OpenCV HoughCircles.
+    8. Encodes cutout to data:image/png;base64,... format for instant display.
+    9. Enqueues non-blocking Supabase Storage upload in background tasks.
     """
     import base64
 
@@ -262,31 +269,25 @@ async def preprocess_image_direct(payload: DirectPreprocessRequest) -> DirectPre
             detail=f"Invalid base64 image data: {e}",
         )
 
-    # 2. Run rembg background removal
+    # 2. Run full preprocessing pipeline
     try:
-        cutout_bytes = remove_background(image_bytes)
+        cutout_bytes, coin_detected, coin_diameter_px = preprocess_and_clean_garment(image_bytes)
     except Exception as e:
-        logger.error(f"rembg background removal failed: {e}")
+        logger.error(f"Image preprocessing pipeline failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"AI background removal failed: {e}",
+            detail=f"AI image preprocessing failed: {e}",
         )
 
-    # 3. Run reference coin detection
-    coin_detected, coin_diameter_px = detect_reference_coin(image_bytes)
-
-    # 4. Convert cutout bytes to DataURL
+    # 3. Convert cutout bytes to DataURL
     b64_cutout = base64.b64encode(cutout_bytes).decode("utf-8")
     cutout_data_url = f"data:image/png;base64,{b64_cutout}"
 
-    # 5. Optional background storage sync if garment_id provided
+    # 4. Asynchronous non-blocking background storage sync if garment_id provided
     storage_path = None
     if payload.garment_id:
-        try:
-            storage_path = f"processed/{payload.garment_id}_cutout.png"
-            upload_cutout_image(storage_path, cutout_bytes)
-        except Exception as sync_err:
-            logger.info(f"Supabase cutout sync note (non-fatal): {sync_err}")
+        storage_path = f"processed/{payload.garment_id}_cutout.png"
+        background_tasks.add_task(upload_cutout_image, storage_path, cutout_bytes)
 
     return DirectPreprocessResponse(
         status="preprocessed",

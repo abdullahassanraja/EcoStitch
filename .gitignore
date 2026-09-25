@@ -44,5 +44,7 @@ Thumbs.db
 .edge-test-profile/
 screenshot_*.png
 test_*.png
+edge_*.png
+shirt_cutout_*.png
 test_edge.js
 
