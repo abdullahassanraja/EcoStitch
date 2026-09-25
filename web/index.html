@@ -17,7 +17,7 @@
   <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <link rel="stylesheet" href="style.css?v=20260915_01">
+  <link rel="stylesheet" href="style.css?v=20260925_05">
 </head>
 <body>
 
@@ -296,6 +296,143 @@
               <span>Profile</span>
             </button>
           </nav>
+        </div>
+
+
+        <!-- ============================================================== -->
+        <!-- SCREEN 1B: GARMENT TYPE SELECTOR                               -->
+        <!-- "What are you upcycling?" — 5 selectable garment type cards    -->
+        <!-- ============================================================== -->
+        <div class="screen" id="garment-type-screen">
+          <header class="capture-header">
+            <button class="circular-back-btn" id="btn-garment-type-back" aria-label="Return to Home">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
+            <h1 class="capture-title">What are you upcycling?</h1>
+          </header>
+
+          <div class="screen-content scrollable">
+            <div class="garment-type-grid" id="garment-type-grid">
+              <button class="garment-type-card" data-type="t_shirt">
+                <svg class="garment-card-icon" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"></path>
+                </svg>
+                <span class="garment-card-label">T-shirt</span>
+              </button>
+              <button class="garment-type-card" data-type="sweater">
+                <svg class="garment-card-icon" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"></path>
+                  <path d="M6 10v1a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-1"></path>
+                </svg>
+                <span class="garment-card-label">Sweater</span>
+              </button>
+              <button class="garment-type-card" data-type="pants">
+                <svg class="garment-card-icon" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 2h16v6l-3 14H7L4 8V2z"></path>
+                  <line x1="12" y1="8" x2="12" y2="22"></line>
+                  <line x1="4" y1="8" x2="20" y2="8"></line>
+                </svg>
+                <span class="garment-card-label">Pants</span>
+              </button>
+              <button class="garment-type-card" data-type="jeans">
+                <svg class="garment-card-icon" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 2h16v6l-3 14H7L4 8V2z"></path>
+                  <line x1="12" y1="8" x2="12" y2="22"></line>
+                  <line x1="4" y1="8" x2="20" y2="8"></line>
+                  <circle cx="8" cy="5" r="0.8" fill="currentColor"></circle>
+                  <circle cx="16" cy="5" r="0.8" fill="currentColor"></circle>
+                </svg>
+                <span class="garment-card-label">Jeans</span>
+              </button>
+              <button class="garment-type-card" data-type="maxi_dress">
+                <svg class="garment-card-icon" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 2 4 8l2 1v13h12V9l2-1-2-6"></path>
+                  <path d="M8 2a4 4 0 0 0 8 0"></path>
+                </svg>
+                <span class="garment-card-label">Maxi Dress</span>
+              </button>
+            </div>
+
+            <!-- "Next" CTA — hidden until a type is selected -->
+            <button class="primary-cta-button garment-type-next-btn" id="btn-garment-type-next" style="display: none;">
+              <span>Next</span>
+              <div class="cta-arrow-circle">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </div>
+            </button>
+          </div>
+        </div>
+
+
+        <!-- ============================================================== -->
+        <!-- SCREEN 1C: SIZE SELECTOR                                       -->
+        <!-- Size chips + View size chart bottom sheet                      -->
+        <!-- ============================================================== -->
+        <div class="screen" id="size-selector-screen">
+          <header class="capture-header">
+            <button class="circular-back-btn" id="btn-size-selector-back" aria-label="Return to Garment Type">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
+            <div class="size-selector-title-group">
+              <h1 class="capture-title size-title-left">Select your size</h1>
+              <span class="size-subtitle" id="size-garment-subtitle">T-shirt</span>
+            </div>
+          </header>
+
+          <div class="screen-content scrollable">
+            <!-- Size chips row (populated by JS) -->
+            <div class="size-chips-row" id="size-chips-row"></div>
+
+            <!-- View size chart link -->
+            <button class="view-size-chart-link" id="btn-view-size-chart" type="button">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 3H3v18h18V3z"></path>
+                <path d="M21 9H3"></path>
+                <path d="M21 15H3"></path>
+                <path d="M9 3v18"></path>
+              </svg>
+              <span>View size chart</span>
+            </button>
+
+            <!-- "Continue" CTA — hidden until a size is selected -->
+            <button class="primary-cta-button size-continue-btn" id="btn-size-continue" style="display: none;">
+              <span>Continue</span>
+              <div class="cta-arrow-circle">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Size Chart Bottom Sheet Overlay -->
+        <div class="size-chart-overlay" id="size-chart-overlay" style="display: none;">
+          <div class="size-chart-backdrop" id="size-chart-backdrop"></div>
+          <div class="size-chart-sheet" id="size-chart-sheet">
+            <div class="size-chart-handle"></div>
+            <div class="size-chart-header">
+              <h3 class="size-chart-title" id="size-chart-title">Size Chart</h3>
+              <button class="circular-back-btn size-chart-close" id="btn-close-size-chart">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            <p class="size-chart-units">All measurements in inches</p>
+            <div class="size-chart-table-wrap" id="size-chart-table-wrap">
+              <div class="size-chart-loading">Loading...</div>
+            </div>
+          </div>
         </div>
 
 
@@ -646,6 +783,6 @@
 
   </main>
 
-  <script src="app.js?v=20260921_02"></script>
+  <script src="app.js?v=20260925_05"></script>
 </body>
 </html>

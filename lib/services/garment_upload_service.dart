@@ -48,7 +48,11 @@ class GarmentUploadService {
   /// and creates a corresponding record in the `garments` database table.
   ///
   /// Returns a [GarmentUploadResult] containing the generated garment ID.
-  Future<GarmentUploadResult> uploadGarmentImage(XFile imageFile) async {
+  Future<GarmentUploadResult> uploadGarmentImage(
+    XFile imageFile, {
+    String? garmentType,
+    String? sizeLabel,
+  }) async {
     try {
       // 1. Ensure user authentication
       final String userId = await ensureAuthenticatedUserId();
@@ -87,6 +91,8 @@ class GarmentUploadService {
         'user_id': userId,
         'image_url': storagePath,
         'status': 'uploaded',
+        if (garmentType != null) 'garment_type': garmentType,
+        if (sizeLabel != null) 'size_label': sizeLabel,
       };
 
       final response = await _client

@@ -23,7 +23,10 @@ enum UploadStatus {
 /// Features camera framing guide, coin placement reference, image capture/upload,
 /// user-triggered "Continue" upload to Supabase, AI loading overlay, and preprocessing result.
 class CaptureScreen extends StatefulWidget {
-  const CaptureScreen({super.key});
+  final String? garmentType;
+  final String? sizeLabel;
+
+  const CaptureScreen({super.key, this.garmentType, this.sizeLabel});
 
   @override
   State<CaptureScreen> createState() => _CaptureScreenState();
@@ -104,7 +107,11 @@ class _CaptureScreenState extends State<CaptureScreen> {
 
     try {
       // 1. Upload to Supabase Storage & insert record in garments table
-      final result = await _uploadService.uploadGarmentImage(_capturedImage!);
+      final result = await _uploadService.uploadGarmentImage(
+        _capturedImage!,
+        garmentType: widget.garmentType,
+        sizeLabel: widget.sizeLabel,
+      );
 
       // 2. Trigger Preprocessing Backend (rembg background removal & coin detection)
       final preprocessRes = await _preprocessingService.preprocessGarment(result.garmentId);

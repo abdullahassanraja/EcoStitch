@@ -287,7 +287,7 @@ class _HomeScreenState extends State<HomeScreen> {
       height: 56,
       child: ElevatedButton(
         onPressed: () {
-          context.push('/capture');
+          context.push('/garment-type');
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: AppTheme.greenDeep,

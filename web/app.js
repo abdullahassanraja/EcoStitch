@@ -12,12 +12,53 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // DOM Elements: Navigation & Screens
   const homeScreen = document.getElementById('home-screen');
+  const garmentTypeScreen = document.getElementById('garment-type-screen');
+  const sizeSelectorScreen = document.getElementById('size-selector-screen');
   const captureScreen = document.getElementById('capture-screen');
+
   const btnStartTransformation = document.getElementById('btn-start-transformation');
   const btnBackToHome = document.getElementById('btn-back-to-home');
   const ctrlToggleScreen = document.getElementById('ctrl-toggle-screen');
   const ctrlSampleDemo = document.getElementById('ctrl-sample-demo');
   const navItems = document.querySelectorAll('.nav-item');
+
+  // Garment Type Screen Elements
+  const btnGarmentTypeBack = document.getElementById('btn-garment-type-back');
+  const btnGarmentTypeNext = document.getElementById('btn-garment-type-next');
+  const garmentTypeCards = document.querySelectorAll('.garment-type-card');
+
+  // Size Selector Screen Elements
+  const btnSizeSelectorBack = document.getElementById('btn-size-selector-back');
+  const btnSizeContinue = document.getElementById('btn-size-continue');
+  const sizeChipsRow = document.getElementById('size-chips-row');
+  const sizeGarmentSubtitle = document.getElementById('size-garment-subtitle');
+  const btnViewSizeChart = document.getElementById('btn-view-size-chart');
+
+  // Size Chart Bottom Sheet Elements
+  const sizeChartOverlay = document.getElementById('size-chart-overlay');
+  const sizeChartBackdrop = document.getElementById('size-chart-backdrop');
+  const btnCloseSizeChart = document.getElementById('btn-close-size-chart');
+  const sizeChartTableWrap = document.getElementById('size-chart-table-wrap');
+  const sizeChartTitle = document.getElementById('size-chart-title');
+
+  let selectedGarmentType = null;
+  let selectedSizeLabel = null;
+
+  const GARMENT_LABELS = {
+    't_shirt': 'T-shirt',
+    'sweater': 'Sweater',
+    'pants': 'Pants',
+    'jeans': 'Jeans',
+    'maxi_dress': 'Maxi Dress'
+  };
+
+  const GARMENT_SIZES = {
+    't_shirt': ['S', 'M', 'L', 'XL', 'XXL'],
+    'sweater': ['S', 'M', 'L', 'XL', 'XXL'],
+    'pants': ['S', 'M', 'L', 'XL', 'XXL'],
+    'jeans': ['S', 'M', 'L', 'XL', 'XXL'],
+    'maxi_dress': ['XS', 'S', 'M', 'L', 'XL']
+  };
 
   // DOM Elements: Capture Screen
   const btnTakePhoto = document.getElementById('btn-take-photo');
@@ -93,30 +134,119 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // =========================================================================
-  // 2. SCREEN NAVIGATION (Home <-> Capture)
+  // 2. SCREEN NAVIGATION (Home -> Garment Type -> Size Selector -> Capture)
   // =========================================================================
-  function showCaptureScreen() {
-    homeScreen.classList.remove('active-screen');
-    captureScreen.classList.add('active-screen');
+  function hideAllScreens() {
+    [homeScreen, garmentTypeScreen, sizeSelectorScreen, captureScreen].forEach(scr => {
+      if (scr) scr.classList.remove('active-screen');
+    });
   }
 
   function showHomeScreen() {
     stopCameraStream();
-    captureScreen.classList.remove('active-screen');
-    homeScreen.classList.add('active-screen');
+    hideAllScreens();
+    if (homeScreen) homeScreen.classList.add('active-screen');
   }
 
+  function showGarmentTypeScreen() {
+    stopCameraStream();
+    hideAllScreens();
+    if (garmentTypeScreen) garmentTypeScreen.classList.add('active-screen');
+  }
+
+  function showSizeSelectorScreen() {
+    stopCameraStream();
+    hideAllScreens();
+    renderSizeChips();
+    if (sizeSelectorScreen) sizeSelectorScreen.classList.add('active-screen');
+  }
+
+  function showCaptureScreen() {
+    hideAllScreens();
+    if (captureScreen) captureScreen.classList.add('active-screen');
+  }
+
+  // Home CTA -> Garment Type Screen
   if (btnStartTransformation) {
-    btnStartTransformation.addEventListener('click', showCaptureScreen);
+    btnStartTransformation.addEventListener('click', showGarmentTypeScreen);
   }
 
+  // Garment Type Back -> Home Screen
+  if (btnGarmentTypeBack) {
+    btnGarmentTypeBack.addEventListener('click', showHomeScreen);
+  }
+
+  // Select Garment Type Card
+  garmentTypeCards.forEach(card => {
+    card.addEventListener('click', () => {
+      garmentTypeCards.forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      selectedGarmentType = card.dataset.type;
+      selectedSizeLabel = null; // Reset size selection when garment type changes
+      if (btnGarmentTypeNext) btnGarmentTypeNext.style.display = 'inline-flex';
+    });
+  });
+
+  // Garment Type Next -> Size Selector Screen
+  if (btnGarmentTypeNext) {
+    btnGarmentTypeNext.addEventListener('click', showSizeSelectorScreen);
+  }
+
+  // Size Selector Back -> Garment Type Screen
+  if (btnSizeSelectorBack) {
+    btnSizeSelectorBack.addEventListener('click', showGarmentTypeScreen);
+  }
+
+  // Dynamic Size Chips Generator
+  function renderSizeChips() {
+    if (!sizeChipsRow) return;
+    const typeKey = selectedGarmentType || 't_shirt';
+    const sizes = GARMENT_SIZES[typeKey] || ['S', 'M', 'L', 'XL', 'XXL'];
+
+    if (sizeGarmentSubtitle) {
+      sizeGarmentSubtitle.textContent = GARMENT_LABELS[typeKey] || 'T-shirt';
+    }
+
+    sizeChipsRow.innerHTML = '';
+    sizes.forEach(sz => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'size-chip' + (selectedSizeLabel === sz ? ' selected' : '');
+      chip.textContent = sz;
+      chip.dataset.size = sz;
+      chip.addEventListener('click', () => {
+        const allChips = sizeChipsRow.querySelectorAll('.size-chip');
+        allChips.forEach(c => c.classList.remove('selected'));
+        chip.classList.add('selected');
+        selectedSizeLabel = sz;
+        if (btnSizeContinue) btnSizeContinue.style.display = 'inline-flex';
+      });
+      sizeChipsRow.appendChild(chip);
+    });
+
+    if (btnSizeContinue) {
+      btnSizeContinue.style.display = selectedSizeLabel ? 'inline-flex' : 'none';
+    }
+  }
+
+  // Size Continue -> Capture Screen
+  if (btnSizeContinue) {
+    btnSizeContinue.addEventListener('click', showCaptureScreen);
+  }
+
+  // Capture Back -> Size Selector Screen
   if (btnBackToHome) {
-    btnBackToHome.addEventListener('click', showHomeScreen);
+    btnBackToHome.addEventListener('click', showSizeSelectorScreen);
   }
 
+  // Top Control Bar Screen Toggle
   if (ctrlToggleScreen) {
     ctrlToggleScreen.addEventListener('click', () => {
-      if (homeScreen.classList.contains('active-screen')) {
+      if (homeScreen && homeScreen.classList.contains('active-screen')) {
+        showGarmentTypeScreen();
+      } else if (garmentTypeScreen && garmentTypeScreen.classList.contains('active-screen')) {
+        showSizeSelectorScreen();
+      } else if (sizeSelectorScreen && sizeSelectorScreen.classList.contains('active-screen')) {
         showCaptureScreen();
       } else {
         showHomeScreen();
@@ -131,6 +261,122 @@ document.addEventListener('DOMContentLoaded', () => {
       item.classList.add('active');
     });
   });
+
+  // =========================================================================
+  // 2B. SIZE CHART BOTTOM SHEET MODAL
+  // =========================================================================
+  if (btnViewSizeChart) {
+    btnViewSizeChart.addEventListener('click', () => {
+      openSizeChartModal(selectedGarmentType || 't_shirt');
+    });
+  }
+
+  if (btnCloseSizeChart) {
+    btnCloseSizeChart.addEventListener('click', closeSizeChartModal);
+  }
+
+  if (sizeChartBackdrop) {
+    sizeChartBackdrop.addEventListener('click', closeSizeChartModal);
+  }
+
+  async function openSizeChartModal(garmentType) {
+    if (sizeChartOverlay) sizeChartOverlay.style.display = 'flex';
+    if (sizeChartTitle) {
+      sizeChartTitle.textContent = `${GARMENT_LABELS[garmentType] || 'Garment'} Size Chart`;
+    }
+    if (sizeChartTableWrap) {
+      sizeChartTableWrap.innerHTML = '<div class="size-chart-loading">Loading size standards...</div>';
+    }
+
+    try {
+      const client = window.supabaseClient || (typeof supabase !== 'undefined' ? supabase : null);
+      if (client) {
+        const { data, error } = await client
+          .from('size_standards')
+          .select('*')
+          .eq('garment_type', garmentType);
+        if (!error && data && data.length > 0) {
+          renderSizeChartTable(data);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('[EcoStitch] Supabase size chart fetch note:', e);
+    }
+    renderFallbackSizeChartTable(garmentType);
+  }
+
+  function closeSizeChartModal() {
+    if (sizeChartOverlay) sizeChartOverlay.style.display = 'none';
+  }
+
+  function renderFallbackSizeChartTable(garmentType) {
+    let headers = ['Size', 'Chest', 'Length', 'Shoulder'];
+    let rows = [];
+
+    if (garmentType === 'pants' || garmentType === 'jeans') {
+      headers = ['Size', 'Waist', 'Inseam', 'Hip'];
+      rows = [
+        ['S', '28-30"', '30"', '36-38"'],
+        ['M', '31-33"', '31"', '39-41"'],
+        ['L', '34-36"', '32"', '42-44"'],
+        ['XL', '37-39"', '32"', '45-47"'],
+        ['XXL', '40-42"', '33"', '48-50"']
+      ];
+    } else if (garmentType === 'maxi_dress') {
+      headers = ['Size', 'Bust', 'Waist', 'Length'];
+      rows = [
+        ['XS', '31-32"', '24-25"', '54"'],
+        ['S', '33-34"', '26-27"', '55"'],
+        ['M', '35-36"', '28-29"', '56"'],
+        ['L', '37-39"', '30-32"', '57"'],
+        ['XL', '40-42"', '33-35"', '58"']
+      ];
+    } else {
+      rows = [
+        ['S', '36-38"', '27"', '17"'],
+        ['M', '39-41"', '28"', '18"'],
+        ['L', '42-44"', '29"', '19"'],
+        ['XL', '45-47"', '30"', '20"'],
+        ['XXL', '48-50"', '31"', '21"']
+      ];
+    }
+    buildTableHtml(headers, rows);
+  }
+
+  function renderSizeChartTable(data) {
+    if (!data || data.length === 0) return renderFallbackSizeChartTable(selectedGarmentType);
+    const dimKeys = new Set();
+    data.forEach(row => {
+      if (row.dimensions) {
+        Object.keys(row.dimensions).forEach(k => dimKeys.add(k));
+      }
+    });
+
+    const dimList = Array.from(dimKeys);
+    const headers = ['Size', ...dimList.map(k => k.charAt(0).toUpperCase() + k.slice(1))];
+    const rows = data.map(row => {
+      const sizeVal = row.size_label || '';
+      const dims = row.dimensions || {};
+      const rowVals = dimList.map(k => dims[k] ? `${dims[k]}"` : '-');
+      return [sizeVal, ...rowVals];
+    });
+
+    buildTableHtml(headers, rows);
+  }
+
+  function buildTableHtml(headers, rows) {
+    let html = '<table class="size-chart-table"><thead><tr>';
+    headers.forEach(h => { html += `<th>${h}</th>`; });
+    html += '</tr></thead><tbody>';
+    rows.forEach(r => {
+      html += '<tr>';
+      r.forEach(val => { html += `<td>${val}</td>`; });
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    if (sizeChartTableWrap) sizeChartTableWrap.innerHTML = html;
+  }
 
   // =========================================================================
   // 3. CAMERA & CAPTURE LOGIC
@@ -479,13 +725,17 @@ document.addEventListener('DOMContentLoaded', () => {
             .upload(storagePath, imageBlob, { contentType: 'image/jpeg', upsert: true });
 
           if (!storageError) {
+            const insertPayload = {
+              user_id: userId,
+              image_url: storagePath,
+              status: 'uploaded'
+            };
+            if (selectedGarmentType) insertPayload.garment_type = selectedGarmentType;
+            if (selectedSizeLabel) insertPayload.size_label = selectedSizeLabel;
+
             const { data: dbData } = await supabaseClient
               .from('garments')
-              .insert([{
-                user_id: userId,
-                image_url: storagePath,
-                status: 'uploaded'
-              }])
+              .insert([insertPayload])
               .select('id')
               .single();
 

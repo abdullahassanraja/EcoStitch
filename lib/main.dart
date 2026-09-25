@@ -6,6 +6,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'config/supabase_config.dart';
 import 'screens/home_screen.dart';
 import 'screens/capture_screen.dart';
+import 'screens/garment_type_screen.dart';
+import 'screens/size_selector_screen.dart';
 import 'theme/app_theme.dart';
 
 Future<void> main() async {
@@ -60,9 +62,26 @@ final GoRouter _router = GoRouter(
       },
     ),
     GoRoute(
+      path: '/garment-type',
+      builder: (BuildContext context, GoRouterState state) {
+        return const GarmentTypeScreen();
+      },
+    ),
+    GoRoute(
+      path: '/size-selector',
+      builder: (BuildContext context, GoRouterState state) {
+        final garmentType = state.extra as String? ?? 't_shirt';
+        return SizeSelectorScreen(garmentType: garmentType);
+      },
+    ),
+    GoRoute(
       path: '/capture',
       builder: (BuildContext context, GoRouterState state) {
-        return const CaptureScreen();
+        final extras = state.extra as Map<String, dynamic>?;
+        return CaptureScreen(
+          garmentType: extras?['garment_type'] as String?,
+          sizeLabel: extras?['size_label'] as String?,
+        );
       },
     ),
   ],
